@@ -439,7 +439,7 @@ class ResultCollection(dict):
         if not enable_graph:
 
             def detach_fn(tensor: Tensor) -> Tensor:
-                return tensor.detach()
+                return tensor.detach().clone()
 
             value = apply_to_collection(value, Tensor, detach_fn)
 

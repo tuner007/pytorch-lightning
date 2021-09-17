@@ -156,7 +156,7 @@ class RichProgressBar(ProgressBarBase):
         self.theme = theme
 
     @property
-    def refresh_rate(self) -> int:
+    def refresh_rate(self) -> float:
         return self._refresh_rate
 
     @property
@@ -199,7 +199,8 @@ class RichProgressBar(ProgressBarBase):
             MetricsTextColumn(trainer, pl_module, stage),
             console=self.console,
             refresh_per_second=self.refresh_rate,
-        ).__enter__()
+        )
+        self.progress.start()
 
     def on_sanity_check_start(self, trainer, pl_module):
         super().on_sanity_check_start(trainer, pl_module)
@@ -296,8 +297,8 @@ class RichProgressBar(ProgressBarBase):
                 train_description += " "
         return train_description
 
-    def teardown(self, trainer, pl_module, stage):
-        self.progress.__exit__(None, None, None)
+    def teardown(self, trainer, pl_module, stage: Optional[str] = None) -> None:
+        self.progress.stop()
 
     def on_exception(self, trainer, pl_module, exception: BaseException) -> None:
         if isinstance(exception, KeyboardInterrupt):

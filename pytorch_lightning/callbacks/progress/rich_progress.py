@@ -125,7 +125,13 @@ class RichProgressBar(ProgressBarBase):
         trainer = Trainer(callbacks=RichProgressBar())
 
     Args:
-        refresh_rate: the number of updates per second, must be strictly positive
+        refresh_rate: Determines at which rate (in number of batches) the progress bars get updated.
+            Set it to ``0`` to disable the display. :class:`~pytorch_lightning.trainer.trainer.Trainer`
+            uses this implementation of the progress bar if Rich is available,
+            and sets the refresh rate to the value provided to the
+            :paramref:`~pytorch_lightning.trainer.trainer.Trainer.progress_bar_refresh_rate` argument in the
+            :class:`~pytorch_lightning.trainer.trainer.Trainer`.
+        refresh_per_second: the number of updates per second, must be strictly positive.
         theme: Contains styles used to stylize the progress bar.
 
     Raises:
@@ -135,7 +141,8 @@ class RichProgressBar(ProgressBarBase):
 
     def __init__(
         self,
-        refresh_rate: float = 1.0,
+        refresh_rate: int = 1,
+        refresh_per_second: float = 1.0,
         theme: RichProgressBarTheme = RichProgressBarTheme(),
     ) -> None:
         if not _RICH_AVAILABLE:
@@ -143,7 +150,8 @@ class RichProgressBar(ProgressBarBase):
                 "`RichProgressBar` requires `rich` to be installed. Install it by running `pip install rich`."
             )
         super().__init__()
-        self._refresh_rate: float = refresh_rate
+        self._refresh_rate: int = refresh_rate
+        self._refresh_per_second: float = refresh_per_second
         self._enabled: bool = True
         self._total_val_batches: int = 0
         self.progress: Progress = None
@@ -189,7 +197,7 @@ class RichProgressBar(ProgressBarBase):
     def predict_description(self) -> str:
         return "Predicting"
 
-    def setup(self, trainer, pl_module, stage):
+    def setup(self, trainer, pl_module, stage=None):
         self.progress = Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(complete_style=self.theme.progress_bar_complete, finished_style=self.theme.progress_bar_finished),
@@ -198,7 +206,7 @@ class RichProgressBar(ProgressBarBase):
             ProcessingSpeedColumn(style=self.theme.processing_speed),
             MetricsTextColumn(trainer, pl_module, stage),
             console=self.console,
-            refresh_per_second=self.refresh_rate,
+            refresh_per_second=self._refresh_per_second,
         )
         self.progress.start()
 
